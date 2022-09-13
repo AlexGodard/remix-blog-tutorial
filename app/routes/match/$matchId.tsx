@@ -46,6 +46,7 @@ export const loader: LoaderFunction = async ({ params }) => {
     getTicketSales(params.matchId),
     getMatchStats(params.matchId),
   ]);
+  invariant(matchStats, `Match not found.`);
   return json<LoaderData>({ ticketSales, matchStats });
 };
 
@@ -138,8 +139,8 @@ export default function Match({ matchId }: { matchId: string }) {
       ticketSales.map((ticketSale) => ({
         ...ticketSale,
         bucket: (isHour
-          ? startOfHour(parseISO(ticketSale.updatedAt))
-          : startOfDay(parseISO(ticketSale.updatedAt))
+          ? startOfHour(parseISO(ticketSale.updatedAt as unknown as string))
+          : startOfDay(parseISO(ticketSale.updatedAt as unknown as string))
         ).toISOString(),
       })),
       'bucket'
@@ -503,7 +504,7 @@ export default function Match({ matchId }: { matchId: string }) {
                             />
                           </button>
                           {/* Current: "z-10 bg-indigo-50 border-indigo-500 text-indigo-600", Default: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50" */}
-                          {paginationRange.map((pageNumber) => {
+                          {paginationRange?.map((pageNumber) => {
                             if (pageNumber === DOTS) {
                               return (
                                 <span className="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700">
