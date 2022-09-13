@@ -17,18 +17,6 @@ declare global {
       login: typeof login;
 
       /**
-       * Deletes the current @user
-       *
-       * @returns {typeof cleanupUser}
-       * @memberof Chainable
-       * @example
-       *    cy.cleanupUser()
-       * @example
-       *    cy.cleanupUser({ email: 'whatever@example.com' })
-       */
-      cleanupUser: typeof cleanupUser;
-
-      /**
        * Extends the standard visit command to wait for the page to load
        *
        * @returns {typeof visitAndCheck}
@@ -60,27 +48,6 @@ function login({
   return cy.get('@user');
 }
 
-function cleanupUser({ email }: { email?: string } = {}) {
-  if (email) {
-    deleteUserByEmail(email);
-  } else {
-    cy.get('@user').then((user) => {
-      const { email: _email } = user as { email?: string };
-      if (_email) {
-        deleteUserByEmail(_email);
-      }
-    });
-  }
-  cy.clearCookie('__session');
-}
-
-function deleteUserByEmail(email: string) {
-  cy.exec(
-    `npx ts-node --require tsconfig-paths/register ./cypress/support/delete-user.ts "${email}"`
-  );
-  cy.clearCookie('__session');
-}
-
 // We're waiting a second because of this issue happen randomly
 // https://github.com/cypress-io/cypress/issues/7306
 // Also added custom types to avoid getting detached
@@ -92,5 +59,4 @@ function visitAndCheck(url: string, waitTime = 1000) {
 }
 
 Cypress.Commands.add('login', login);
-Cypress.Commands.add('cleanupUser', cleanupUser);
 Cypress.Commands.add('visitAndCheck', visitAndCheck);

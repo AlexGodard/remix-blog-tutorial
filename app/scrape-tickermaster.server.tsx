@@ -4,7 +4,8 @@ import { prisma } from '~/db.server';
 import retry from 'async-retry';
 
 declare global {
-  let __scrapingInitiated__: boolean;
+  // eslint-disable-next-line no-var,vars-on-top
+  var __scrapingInitiated__: boolean;
 }
 
 const headers = {

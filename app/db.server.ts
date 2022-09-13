@@ -4,7 +4,8 @@ import { PrismaClient } from '@prisma/client';
 let prisma: PrismaClient;
 
 declare global {
-  let __database__: PrismaClient;
+  // eslint-disable-next-line no-var,vars-on-top
+  var __database__: PrismaClient;
 }
 
 // this is needed because in development we don't want to restart
