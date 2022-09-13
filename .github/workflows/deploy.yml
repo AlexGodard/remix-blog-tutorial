@@ -10,6 +10,9 @@ permissions:
   actions: write
   contents: read
 
+env:
+  NPM_TOKEN: $NPM_TOKEN
+
 jobs:
   lint:
     name: ⬣ ESLint

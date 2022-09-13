@@ -252,7 +252,7 @@ export default function Match({ matchId }: { matchId: string }) {
             padding={
               isSmall
                 ? { top: 10, right: 10, bottom: 30, left: 30 }
-                : { top: 10, right: 10, bottom: 50, left: 50 }
+                : { top: 10, right: 20, bottom: 50, left: 50 }
             }
           >
             <VictoryAxis
