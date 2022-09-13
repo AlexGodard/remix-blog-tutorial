@@ -12,6 +12,7 @@ seed()
     console.error(error);
     process.exit(1);
   })
+  // eslint-disable-next-line unicorn/prefer-top-level-await
   .finally(async () => {
     await prisma.$disconnect();
   });

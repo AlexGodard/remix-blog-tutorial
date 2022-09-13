@@ -55,7 +55,7 @@
     "victory": "^36.6.6"
   },
   "devDependencies": {
-    "@alexgodard/eslint-config-alexgodard": "^4.0.2",
+    "@alexgodard/eslint-config-alexgodard": "^4.0.5",
     "@faker-js/faker": "^7.4.0",
     "@remix-run/dev": "^1.7.0",
     "@remix-run/eslint-config": "^1.7.0",

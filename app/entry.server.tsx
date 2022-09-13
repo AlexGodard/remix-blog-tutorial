@@ -6,6 +6,8 @@ import isbot from 'isbot';
 import { renderToPipeableStream } from 'react-dom/server';
 import { number } from '~/scrape-tickermaster.server';
 
+console.log('number', number);
+
 const ABORT_DELAY = 5000;
 
 export default function handleRequest(

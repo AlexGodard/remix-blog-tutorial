@@ -64,5 +64,6 @@ export const usePagination = ({
       const middleRange = range(leftSiblingIndex, rightSiblingIndex);
       return [firstPageIndex, DOTS, ...middleRange, DOTS, lastPageIndex];
     }
+    throw new Error('Should not happen');
   }, [totalCount, pageSize, siblingCount, currentPage]);
 };

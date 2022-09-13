@@ -191,8 +191,8 @@ export default function Match({ matchId }: { matchId: string }) {
               name="match"
               className="ml-2 mr-4 block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               value={parameters.matchId}
-              onChange={(e) => {
-                navigate(`/match/${e.target.value}`);
+              onChange={(event) => {
+                navigate(`/match/${event.target.value}`);
               }}
             >
               <option value="CFM2216IND">
@@ -302,8 +302,6 @@ export default function Match({ matchId }: { matchId: string }) {
                           backgroundColor: 'red',
                           border: '1px solid black',
                           strokeWidth: '1px',
-                          textDecorationColor: 'rgb(241, 245, 249)',
-                          borderColor: 'rgb(241, 245, 249)',
                         }
                       : {
                           fontSize: 16,
@@ -312,8 +310,6 @@ export default function Match({ matchId }: { matchId: string }) {
                           backgroundColor: 'red',
                           border: '1px solid black',
                           strokeWidth: '1px',
-                          textDecorationColor: 'rgb(241, 245, 249)',
-                          borderColor: 'rgb(241, 245, 249)',
                         }
                   }
                 />
@@ -477,8 +473,8 @@ export default function Match({ matchId }: { matchId: string }) {
                           name="pageSize"
                           className="mr-4 block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                           value={pageSize}
-                          onChange={(e) => {
-                            table.setPageSize(Number(e.target.value));
+                          onChange={(event) => {
+                            table.setPageSize(Number(event.target.value));
                           }}
                         >
                           <option>10</option>

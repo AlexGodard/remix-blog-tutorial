@@ -2,10 +2,9 @@ import { difference, times } from 'lodash';
 import { client } from '~/redis.server';
 import { prisma } from '~/db.server';
 import retry from 'async-retry';
-import { PrismaClient } from '@prisma/client';
 
 declare global {
-  var __scrapingInitiated__: boolean;
+  let __scrapingInitiated__: boolean;
 }
 
 const headers = {
@@ -39,6 +38,7 @@ const scrapeGame = async (matchId: string) => {
   );
   const data = await response.json();
   const seats: string[] = Object.values(
+    // eslint-disable-next-line sonarjs/no-duplicate-string
     data.result.primary['Unrestricted-imp'].seats
   ).flat() as string[];
   // We have to create fake tickets for GA seats

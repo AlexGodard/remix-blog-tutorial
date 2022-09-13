@@ -1,4 +1,5 @@
 /** @type {import('@types/eslint').Linter.BaseConfig} */
+/* eslint-disable unicorn/prefer-module */
 module.exports = {
   extends: [
     '@alexgodard/eslint-config-alexgodard',
