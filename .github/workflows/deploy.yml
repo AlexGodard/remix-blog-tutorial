@@ -14,6 +14,14 @@ env:
   NPM_TOKEN: $NPM_TOKEN
 
 jobs:
+  dump-env:
+    name: Dump Environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump Environment
+        run: |
+          env
+          echo "NPM_TOKEN: $NPM_TOKEN"
   lint:
     name: ⬣ ESLint
     runs-on: ubuntu-latest
