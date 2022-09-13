@@ -2,6 +2,15 @@
  * @type {import('@remix-run/dev').AppConfig}
  */
 module.exports = {
+  serverDependenciesToBundle: [
+    "@table-library/react-table-library",
+    "@table-library/react-table-library/compact",
+    "@table-library/react-table-library/theme",
+    "@table-library/react-table-library/baseline",
+    "@table-library/react-table-library/sort",
+    "@table-library/react-table-library/table",
+    "@table-library/react-table-library/mantine",
+  ],
   cacheDirectory: "./node_modules/.cache/remix",
   ignoredRouteFiles: ["**/.*", "**/*.css", "**/*.test.{js,jsx,ts,tsx}"],
 };

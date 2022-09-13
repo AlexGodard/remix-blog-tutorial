@@ -1,0 +1,122 @@
+import { difference, times } from 'lodash';
+import { client } from '~/redis.server';
+import { prisma } from '~/db.server';
+import retry from 'async-retry';
+import { PrismaClient } from '@prisma/client';
+
+declare global {
+  var __scrapingInitiated__: boolean;
+}
+
+const headers = {
+  accept: 'application/json',
+  'accept-language': 'en,fr;q=0.9',
+  'content-type': 'application/json-rpc',
+  'sec-ch-ua':
+    '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Linux"',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-origin',
+  Referer: 'https://billets.cfmontreal.com/cfm/',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+};
+
+const scrapeGame = async (matchId: string) => {
+  console.log(`Starting to scrape ticketmaster... ${matchId}`);
+  const response = await retry(
+    () =>
+      fetch(
+        `https://billets.cfmontreal.com/info//showshop.eventInventory3?params=8b3ffd71-436c-49c5-9d1a-1ef8b167f959_${matchId}_[object%20Object]`,
+        {
+          headers,
+          body: `{"jsonrpc":"2.0","method":"showshop.eventInventory3","params":["8b3ffd71-436c-49c5-9d1a-1ef8b167f959","${matchId}",{"groupByPriceLevel":true,"groupByRestriction":true,"includeKilledSeats":true}],"id":1}`,
+          method: 'POST',
+        }
+      ),
+    { onRetry: (error) => console.log('Retrying...', error) }
+  );
+  const data = await response.json();
+  const seats: string[] = Object.values(
+    data.result.primary['Unrestricted-imp'].seats
+  ).flat() as string[];
+  // We have to create fake tickets for GA seats
+  const ticketsLeft114: string[] = [];
+  times(
+    data.result.primary['Unrestricted-imp'].GASeats['114_supporters']['15'],
+    (index) => ticketsLeft114.push(`114_Supporters_${index}`)
+  );
+  const ticketsLeft127: string[] = [];
+  times(
+    data.result.primary['Unrestricted-imp'].GASeats['127_supporters']['13'],
+    (index) => ticketsLeft127.push(`127_Supporters_${index}`)
+  );
+  const ticketsLeft131: string[] = [];
+  times(
+    data.result.primary['Unrestricted-imp'].GASeats['131_supporters']['14'],
+    (index) => ticketsLeft131.push(`131_Supporters_${index}`)
+  );
+  const ticketsLeft132: string[] = [];
+  times(data.result.primary['SSOps-imp']?.seats?.['16'].length, (index) =>
+    ticketsLeft132.push(`132_Supporters_${index}`)
+  );
+
+  const allSeats = [
+    ...ticketsLeft114,
+    ...ticketsLeft127,
+    ...ticketsLeft131,
+    ...ticketsLeft132,
+    ...seats,
+  ];
+  const ticketsLeft = Number(await client.get(`ticketsLeft:${matchId}`));
+  console.log(ticketsLeft, allSeats.length);
+
+  if (ticketsLeft !== allSeats.length) {
+    // Tickets were sold
+    const ticketsFromPreviousScrape = JSON.parse(
+      (await client.get(`allSeats:${matchId}`)) || '[]'
+    );
+    const ticketsSold = difference(ticketsFromPreviousScrape, allSeats);
+    console.log(`Tickets sold ${matchId}:`, ticketsSold);
+
+    const count = await Promise.all(
+      ticketsSold.map((ticket) =>
+        prisma.ticketSale.upsert({
+          where: { seat_matchId: { seat: ticket, matchId } },
+          update: {
+            seat: ticket,
+            section: ticket.split('_')[0],
+            matchId,
+          },
+          create: {
+            seat: ticket,
+            section: ticket.split('_')[0],
+            matchId,
+          },
+        })
+      )
+    );
+
+    console.log('Tickets sold count:', count.length);
+    await prisma.matchStats.create({
+      data: {
+        ticketsLeft: allSeats.length,
+        ticketsLeftIn132: ticketsLeft132.length,
+        matchId,
+      },
+    });
+  }
+  await client.set(`ticketsLeft:${matchId}`, allSeats.length);
+  await client.set(`allSeats:${matchId}`, JSON.stringify(allSeats));
+};
+
+if (!global.__scrapingInitiated__) {
+  global.__scrapingInitiated__ = true;
+  setInterval(async () => {
+    await scrapeGame('CFM2216IND');
+    await scrapeGame('CFM2217IND');
+  }, 30_000);
+}
+
+export const number = 8;
