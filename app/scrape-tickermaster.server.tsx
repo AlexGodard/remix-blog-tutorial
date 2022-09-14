@@ -38,6 +38,10 @@ const scrapeGame = async (matchId: string) => {
     { onRetry: (error) => console.log('Retrying...', error) }
   );
   const data = await response.json();
+  if (!data.result) {
+    // Game is possibly sold out or over. Do nothing to prevent a crash.
+    return;
+  }
   const seats: string[] = Object.values(
     // eslint-disable-next-line sonarjs/no-duplicate-string
     data.result.primary['Unrestricted-imp'].seats
