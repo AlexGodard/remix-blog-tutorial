@@ -195,11 +195,11 @@ export default function Match({ matchId }: { matchId: string }) {
                 navigate(`/match/${event.target.value}`);
               }}
             >
+              <option value="CFM2217IND">
+                1er Octobre 2022 contre D.C. United
+              </option>
               <option value="CFM2216IND">
                 13 Septembre 2022 contre Chicago Fire
-              </option>
-              <option value="CFM2217IND">
-                1 Octobre 2022 contre D.C. United
               </option>
             </select>
           </h3>
