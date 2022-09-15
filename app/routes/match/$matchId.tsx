@@ -1,6 +1,5 @@
 import type { LoaderFunction } from '@remix-run/node';
 import { json } from '@remix-run/node';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import colors from 'tailwindcss/colors';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import {
@@ -230,7 +229,7 @@ export default function Match({ matchId }: { matchId: string }) {
   const style = isSmall
     ? {
         grid: { stroke: 'grey', strokeWidth: 0.25 },
-        tickLabels: { padding: 2 },
+        tickLabels: { fontSize: 12, padding: 2 },
       }
     : {
         axisLabel: { padding: 30, fontSize: 10 },
@@ -314,18 +313,15 @@ export default function Match({ matchId }: { matchId: string }) {
                 style={{ strokeWidth: 1 }}
                 labelComponent={
                   <VictoryTooltip
+                    constrainToVisibleArea
                     cornerRadius={0}
-                    flyoutHeight={20}
-                    flyoutWidth={100}
                     flyoutStyle={{
                       fill: colors.gray[200],
                       strokeWidth: 0.5,
-                      height: 10,
                     }}
                     labelComponent={
                       <VictoryLabel
                         style={{
-                          fontSize: 6,
                           strokeWidth: 1,
                         }}
                       />
@@ -335,7 +331,7 @@ export default function Match({ matchId }: { matchId: string }) {
                 labels={({ datum }) => {
                   return `${format(
                     datum.date,
-                    isHour ? 'dd MMM. kk:mm' : 'MM/dd'
+                    isHour ? 'dd MMM. kk:mm' : 'dd MMM. yyyy'
                   )}\n ${datum.ticketsLeft.toLocaleString()} billets vendus (+${
                     datum.ticketsSold
                   }${
@@ -348,7 +344,7 @@ export default function Match({ matchId }: { matchId: string }) {
             }
             padding={
               isSmall
-                ? { top: 10, right: 10, bottom: 30, left: 30 }
+                ? { top: 10, right: 30, bottom: 30, left: 40 }
                 : { top: 10, right: 40, bottom: 50, left: 50 }
             }
           >
@@ -359,7 +355,7 @@ export default function Match({ matchId }: { matchId: string }) {
               tickFormat={(tick) => {
                 return `${format(
                   new Date(tick),
-                  isHour ? 'MM/dd kk:mm' : 'MM/dd'
+                  isHour ? 'd MMM. kk:mm' : 'd MMM.'
                 )}`;
               }}
               tickValues={
@@ -390,9 +386,15 @@ export default function Match({ matchId }: { matchId: string }) {
               // Use normalized tickValues (0 - 1)
               tickValues={[0.25, 0.5, 0.75, 1]}
               // Re-scale ticks by multiplying by correct maxima
-              tickFormat={(t) => (t * maxLine!).toLocaleString()}
+              tickFormat={(t) =>
+                isSmall
+                  ? new Intl.NumberFormat('en', { notation: 'compact' }).format(
+                      t * maxLine!
+                    )
+                  : (t * maxLine!).toLocaleString()
+              }
               dependentAxis
-              offsetX={410}
+              offsetX={isSmall ? 270 : 410}
               style={{
                 ...style,
                 tickLabels: {
