@@ -83,7 +83,9 @@ const scrapeGame = async (matchId: string) => {
       (await client.get(`allSeats:${matchId}`)) || '[]'
     );
     const ticketsSold = difference(ticketsFromPreviousScrape, allSeats);
+    const ticketsReleased = difference(allSeats, ticketsFromPreviousScrape);
     console.log(`Tickets sold ${matchId}:`, ticketsSold);
+    console.log(`Tickets released ${matchId}:`, ticketsReleased);
 
     const count = await Promise.all(
       ticketsSold.map((ticket) =>
@@ -93,17 +95,40 @@ const scrapeGame = async (matchId: string) => {
             seat: ticket,
             section: ticket.split('_')[0],
             matchId,
+            released: false,
           },
           create: {
             seat: ticket,
             section: ticket.split('_')[0],
             matchId,
+            released: false,
           },
         })
       )
     );
 
     console.log('Tickets sold count:', count.length);
+    const count2 = await Promise.all(
+      ticketsReleased.map((ticket) =>
+        prisma.ticketSale.upsert({
+          where: { seat_matchId: { seat: ticket, matchId } },
+          update: {
+            seat: ticket,
+            section: ticket.split('_')[0],
+            matchId,
+            released: true,
+          },
+          create: {
+            seat: ticket,
+            section: ticket.split('_')[0],
+            matchId,
+            released: true,
+          },
+        })
+      )
+    );
+
+    console.log('Tickets released count:', count2.length);
     await prisma.matchStats.create({
       data: {
         ticketsLeft: allSeats.length,

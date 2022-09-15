@@ -11,6 +11,8 @@ module.exports = {
     '@table-library/react-table-library/sort',
     '@table-library/react-table-library/table',
     '@table-library/react-table-library/mantine',
+    'd3-scale',
+    'd3-interpolate',
   ],
   cacheDirectory: './node_modules/.cache/remix',
   ignoredRouteFiles: ['**/.*', '**/*.css', '**/*.test.{js,jsx,ts,tsx}'],

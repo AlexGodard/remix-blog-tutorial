@@ -1,5 +1,7 @@
 import type { LoaderFunction } from '@remix-run/node';
-import { redirect, json } from '@remix-run/node';
+import { json } from '@remix-run/node';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import colors from 'tailwindcss/colors';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import {
   flexRender,
@@ -21,6 +23,7 @@ import {
   eachDayOfInterval,
   format,
   formatDistanceToNow,
+  isSameSecond,
   parseISO,
   startOfDay,
   startOfHour,
@@ -28,33 +31,59 @@ import {
 import React from 'react';
 import { DOTS, usePagination } from '~/hooks/usePagination';
 import classNames from 'classnames';
-import { groupBy, sortBy } from 'lodash';
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryTooltip } from 'victory';
+import { groupBy, last, max, round, sortBy } from 'lodash';
+import {
+  VictoryAxis,
+  VictoryBar,
+  VictoryChart,
+  VictoryLabel,
+  VictoryLine,
+  VictoryStack,
+  VictoryTooltip,
+  VictoryVoronoiContainer,
+} from 'victory';
 import { number } from '~/scrape-tickermaster.server';
-import { getMatchStats } from '~/models/matchStats';
+import { getLatestMatchStats, getMatchStats } from '~/models/matchStats';
 import { useMedia } from 'react-use';
 import invariant from 'tiny-invariant';
 
 console.log(number);
 
-type LoaderData = { ticketSales: TicketSale[]; matchStats: MatchStats };
+type LoaderData = {
+  ticketSales: TicketSale[];
+  latestMatchStats: MatchStats;
+  matchStats: MatchStats[];
+};
 
 export const loader: LoaderFunction = async ({ params }) => {
   invariant(params.matchId, `params.matchId is required`);
 
-  const [ticketSales, matchStats] = await Promise.all([
+  const [ticketSales, latestMatchStats, matchStats] = await Promise.all([
     getTicketSales(params.matchId),
+    getLatestMatchStats(params.matchId),
     getMatchStats(params.matchId),
   ]);
   invariant(matchStats, `Match not found.`);
-  return json<LoaderData>({ ticketSales, matchStats });
+  invariant(latestMatchStats, `Match not found.`);
+  return json<LoaderData>({
+    ticketSales: ticketSales.filter(
+      (ticketSale) =>
+        !(
+          ticketSale.released &&
+          !isSameSecond(ticketSale.createdAt, ticketSale.updatedAt)
+        )
+    ),
+    matchStats,
+    latestMatchStats,
+  });
 };
 
 export default function Match({ matchId }: { matchId: string }) {
   const navigate = useNavigate();
   const parameters = useParams();
   const isSmall = useMedia('(max-width: 639px)', false);
-  const { ticketSales, matchStats } = useLoaderData() as unknown as LoaderData;
+  const { ticketSales, matchStats, latestMatchStats } =
+    useLoaderData() as unknown as LoaderData;
   const [isHour, setIsHour] = React.useState(!isSmall);
   const [sorting, setSorting] = React.useState<SortingState>([
     {
@@ -75,6 +104,16 @@ export default function Match({ matchId }: { matchId: string }) {
         header: 'Siège',
         footer: (properties) => properties.column.id,
         accessorKey: 'seat',
+        cell: (properties) => {
+          return (
+            <div>
+              <span>{properties.getValue<string>()}</span>
+              {properties.row.original.released && (
+                <span className={'text-red-700'}> (libéré)</span>
+              )}
+            </div>
+          );
+        },
       },
       {
         header: "Heure d'achat",
@@ -85,15 +124,17 @@ export default function Match({ matchId }: { matchId: string }) {
         cell: (properties) => {
           return (
             <div>
-              {format(
-                parseISO(properties.getValue<string>()),
-                'yyyy-MM-dd kk:mm'
-              )}{' '}
-              (
-              {formatDistanceToNow(parseISO(properties.getValue<string>()), {
-                addSuffix: true,
-              })}
-              )
+              <div className="text-sm">
+                {format(
+                  parseISO(properties.getValue<string>()),
+                  'yyyy-MM-dd kk:mm'
+                )}{' '}
+                (
+                {formatDistanceToNow(parseISO(properties.getValue<string>()), {
+                  addSuffix: true,
+                })}
+                )
+              </div>
               <div className="text-xs text-gray-500 sm:hidden">
                 Tribune:{' '}
                 {properties.row
@@ -123,7 +164,6 @@ export default function Match({ matchId }: { matchId: string }) {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    debugTable: true,
   });
 
   const paginationRange = usePagination({
@@ -135,7 +175,7 @@ export default function Match({ matchId }: { matchId: string }) {
   const { pageSize, pageIndex } = table.getState().pagination;
 
   const chartData = React.useMemo(() => {
-    const groups = groupBy(
+    const ticketSalesByBucket = groupBy(
       ticketSales.map((ticketSale) => ({
         ...ticketSale,
         bucket: (isHour
@@ -146,26 +186,44 @@ export default function Match({ matchId }: { matchId: string }) {
       'bucket'
     );
 
-    return sortBy(
-      Object.entries(groups).map(([date, ticketSales_]) => ({
-        date: parseISO(date),
-        count: ticketSales_.length,
-        label: `${format(parseISO(date), isHour ? 'MM/dd kk:mm' : 'MM/dd')}: ${
-          ticketSales_.length
-        } billets vendus`,
+    const matchStatsByBucket = groupBy(
+      matchStats.map((matchStat) => ({
+        ...matchStat,
+        bucket: (isHour
+          ? startOfHour(parseISO(matchStat.timestamp as unknown as string))
+          : startOfDay(parseISO(matchStat.timestamp as unknown as string))
+        ).toISOString(),
       })),
+      'bucket'
+    );
+
+    return sortBy(
+      Object.entries(ticketSalesByBucket).map(([date, ticketSales_]) => {
+        return {
+          date: parseISO(date),
+          ticketsSold: ticketSales_.filter((ticketSale) => !ticketSale.released)
+            .length,
+          ticketsReleased: ticketSales_.filter(
+            (ticketSale) => ticketSale.released
+          ).length,
+          ticketsLeft:
+            19_619 - (last(matchStatsByBucket[date])?.ticketsLeft || 0),
+        };
+      }),
       'date'
     );
-  }, [ticketSales, isHour]);
+  }, [ticketSales, isHour, matchStats]);
 
   const stats = [
     {
       name: 'Billets vendus (132 GA)',
-      stat: `${166 - matchStats.ticketsLeftIn132} / 166`,
+      stat: `${166 - latestMatchStats.ticketsLeftIn132} / 166`,
     },
     {
       name: 'Billets vendus (Stade entier)',
-      stat: `${(19_619 - matchStats.ticketsLeft).toLocaleString()} / 19,619`,
+      stat: `${(
+        19_619 - latestMatchStats.ticketsLeft
+      ).toLocaleString()} / 19,619`,
     },
   ];
 
@@ -180,6 +238,12 @@ export default function Match({ matchId }: { matchId: string }) {
         grid: { stroke: 'grey', strokeWidth: 0.25 },
       };
 
+  // find maxima for normalizing data
+  const maxBar = max(
+    chartData.map((matchStat) => matchStat.ticketsSold)
+  ) as number;
+  const maxLine = 20_000;
+
   return (
     <div className="w-full lg:w-auto lg:min-w-[1024px]">
       <div className="max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -189,18 +253,14 @@ export default function Match({ matchId }: { matchId: string }) {
             <select
               id="match"
               name="match"
-              className="ml-2 mr-4 block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+              className="ml-2 mr-4 block rounded-md border-gray-300 py-2 pl-3 pr-4 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               value={parameters.matchId}
               onChange={(event) => {
                 navigate(`/match/${event.target.value}`);
               }}
             >
-              <option value="CFM2217IND">
-                1er Octobre 2022 contre D.C. United
-              </option>
-              <option value="CFM2216IND">
-                13 Septembre 2022 contre Chicago Fire
-              </option>
+              <option value="CFM2217IND">1er Oct. 2022 c. D.C. United</option>
+              <option value="CFM2216IND">13 Sept. 2022 c. Chicago Fire</option>
             </select>
           </h3>
           <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -246,13 +306,50 @@ export default function Match({ matchId }: { matchId: string }) {
           <VictoryChart
             // domainPadding will add space to each side of VictoryBar to
             // prevent it from overlapping the axis
-            width={isSmall ? 300 : undefined}
-            height={isSmall ? 300 : undefined}
+            width={isSmall ? 300 : 450}
+            height={300}
             domainPadding={20}
+            containerComponent={
+              <VictoryVoronoiContainer
+                style={{ strokeWidth: 1 }}
+                labelComponent={
+                  <VictoryTooltip
+                    cornerRadius={0}
+                    flyoutHeight={20}
+                    flyoutWidth={100}
+                    flyoutStyle={{
+                      fill: colors.gray[200],
+                      strokeWidth: 0.5,
+                      height: 10,
+                    }}
+                    labelComponent={
+                      <VictoryLabel
+                        style={{
+                          fontSize: 6,
+                          strokeWidth: 1,
+                        }}
+                      />
+                    }
+                  />
+                }
+                labels={({ datum }) => {
+                  return `${format(
+                    datum.date,
+                    isHour ? 'dd MMM. kk:mm' : 'MM/dd'
+                  )}\n ${datum.ticketsLeft.toLocaleString()} billets vendus (+${
+                    datum.ticketsSold
+                  }${
+                    datum.ticketsReleased
+                      ? ` - ${datum.ticketsReleased} libérés`
+                      : ''
+                  })`;
+                }}
+              />
+            }
             padding={
               isSmall
                 ? { top: 10, right: 10, bottom: 30, left: 30 }
-                : { top: 10, right: 20, bottom: 50, left: 50 }
+                : { top: 10, right: 40, bottom: 50, left: 50 }
             }
           >
             <VictoryAxis
@@ -280,41 +377,68 @@ export default function Match({ matchId }: { matchId: string }) {
             <VictoryAxis
               label={!isSmall ? 'Nombre de billets vendus' : undefined}
               dependentAxis
-              style={style}
+              // Use normalized tickValues (0 - 1)
+              tickValues={[0.25, 0.5, 0.75, 1]}
+              // Re-scale ticks by multiplying by correct maxima
+              tickFormat={(t) => round(t * maxBar! * 1.5).toLocaleString()}
+              style={{
+                ...style,
+                tickLabels: { ...style.tickLabels, fill: 'blue' },
+              }}
             />
-            <VictoryBar
-              barRatio={0.3}
+            <VictoryAxis
+              // Use normalized tickValues (0 - 1)
+              tickValues={[0.25, 0.5, 0.75, 1]}
+              // Re-scale ticks by multiplying by correct maxima
+              tickFormat={(t) => (t * maxLine!).toLocaleString()}
+              dependentAxis
+              offsetX={410}
+              style={{
+                ...style,
+                tickLabels: {
+                  ...style.tickLabels,
+                  padding: -5,
+                  align: 'start',
+                  textAnchor: 'start',
+                  fill: 'darkgreen',
+                },
+              }}
+            />
+            <VictoryLine
               data={chartData}
               x="date"
-              y="count"
+              y={(datum) => datum.ticketsLeft / maxLine}
               style={{
-                data: { fill: 'blue' },
+                data: {
+                  stroke: 'darkgreen',
+                  strokeWidth: ({ active }) => (active ? 3 : 2),
+                },
               }}
-              labelComponent={
-                <VictoryTooltip
-                  constrainToVisibleArea
-                  style={
-                    !isSmall
-                      ? {
-                          fontSize: 8,
-                          fontFamily: '"Inter", sans-serif',
-                          fontWeight: 500,
-                          backgroundColor: 'red',
-                          border: '1px solid black',
-                          strokeWidth: '1px',
-                        }
-                      : {
-                          fontSize: 16,
-                          fontFamily: '"Inter", sans-serif',
-                          fontWeight: 500,
-                          backgroundColor: 'red',
-                          border: '1px solid black',
-                          strokeWidth: '1px',
-                        }
-                  }
-                />
-              }
             />
+            <VictoryStack>
+              <VictoryBar
+                barRatio={0.2}
+                data={chartData}
+                x="date"
+                y={(datum) => datum.ticketsReleased / maxBar / 1.5}
+                style={{
+                  data: {
+                    fill: 'red',
+                  },
+                }}
+              />
+              <VictoryBar
+                barRatio={0.2}
+                data={chartData}
+                x="date"
+                y={(datum) => datum.ticketsSold / maxBar / 1.5}
+                style={{
+                  data: {
+                    fill: 'blue',
+                  },
+                }}
+              />
+            </VictoryStack>
           </VictoryChart>
         </div>
       </div>
@@ -337,7 +461,7 @@ export default function Match({ matchId }: { matchId: string }) {
                                 'text-left text-sm font-semibold text-gray-900',
                                 index === 0
                                   ? 'py-3.5 pl-4 pr-3 sm:pl-6'
-                                  : 'px-3 py-3.5',
+                                  : 'px-2 py-3.5',
                                 index === 2 ? 'hidden sm:table-cell' : ''
                               )}
                             >
@@ -399,47 +523,38 @@ export default function Match({ matchId }: { matchId: string }) {
                     ))}
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {table.getRowModel().rows.map((row) => (
-                      <tr key={row.id}>
-                        {row.getVisibleCells().map((cell, index) => (
-                          <td
-                            className={classNames(
-                              'whitespace-nowrap px-3 py-4 text-sm text-gray-700',
-                              index === 0
-                                ? 'py-4 pl-4 pr-3 sm:pl-6'
-                                : 'px-3 py-4',
-                              index === 2 ? 'hidden sm:table-cell' : ''
-                            )}
-                            key={cell.id}
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+                    {table.getRowModel().rows.map((row, i) => {
+                      return (
+                        <tr
+                          key={row.id}
+                          className={
+                            row.original.released ? 'bg-red-50' : undefined
+                          }
+                        >
+                          {row.getVisibleCells().map((cell, index) => (
+                            <td
+                              className={classNames(
+                                'whitespace-nowrap text-sm text-gray-700',
+                                index === 0
+                                  ? 'py-2 pl-4 pr-3 sm:pl-6'
+                                  : 'px-2 py-2',
+                                index === 2 ? 'hidden sm:table-cell' : ''
+                              )}
+                              key={cell.id}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-                  <div className="flex flex-1 justify-between sm:hidden">
-                    <button
-                      onClick={() => table.previousPage()}
-                      disabled={!table.getCanPreviousPage()}
-                      className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => table.nextPage()}
-                      disabled={!table.getCanNextPage()}
-                      className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      Next
-                    </button>
-                  </div>
-                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <div className="flex flex-col md:flex-1 md:flex-row md:items-center md:justify-between">
                     <div className={'mr-8'}>
                       <p className="text-sm text-gray-700">
                         Showing{' '}
@@ -460,11 +575,11 @@ export default function Match({ matchId }: { matchId: string }) {
                         results
                       </p>
                     </div>
-                    <div className="flex">
+                    <div className="flex flex-col md:flex-row md:items-center">
                       <div className="flex items-center">
                         <label
                           htmlFor="pageSize"
-                          className="mr-2 block text-sm font-medium text-gray-700"
+                          className="my-4 mr-2 block text-sm font-medium text-gray-700"
                         >
                           Page size
                         </label>
@@ -516,7 +631,7 @@ export default function Match({ matchId }: { matchId: string }) {
                                   table.setPageIndex(pageNumber - 1)
                                 }
                                 className={classNames(
-                                  'relative inline-flex items-center border px-4 py-2 text-sm font-medium focus:z-20',
+                                  'relative inline-flex items-center border px-2 py-1 text-sm font-medium focus:z-20 sm:px-4 sm:py-2',
                                   pageNumber ===
                                     table.getState().pagination.pageIndex + 1
                                     ? 'z-10 border-indigo-500 bg-indigo-50 text-indigo-600'

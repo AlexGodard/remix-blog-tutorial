@@ -11,6 +11,7 @@ model TicketSale {
   seat String
   section String @default("UNKNOWN")
   matchId String @default("UNKNOWN")
+  released Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
