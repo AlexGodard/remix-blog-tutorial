@@ -80,7 +80,7 @@ export const loader: LoaderFunction = async ({ params }) => {
 export default function Match({ matchId }: { matchId: string }) {
   const navigate = useNavigate();
   const parameters = useParams();
-  const isSmall = useMedia('(max-width: 639px)', false);
+  const isSmall = useMedia('(max-width: 639px)', true);
   const { ticketSales, matchStats, latestMatchStats } =
     useLoaderData() as unknown as LoaderData;
   const [isHour, setIsHour] = React.useState(!isSmall);
@@ -212,7 +212,7 @@ export default function Match({ matchId }: { matchId: string }) {
       'date'
     );
   }, [ticketSales, isHour, matchStats]);
-
+  console.log(chartData);
   const stats = [
     {
       name: 'Billets vendus (132 GA)',

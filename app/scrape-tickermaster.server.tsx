@@ -144,7 +144,6 @@ const scrapeGame = async (matchId: string) => {
 if (!global.__scrapingInitiated__) {
   global.__scrapingInitiated__ = true;
   setInterval(async () => {
-    await scrapeGame('CFM2216IND');
     await scrapeGame('CFM2217IND');
   }, 30_000);
 }
