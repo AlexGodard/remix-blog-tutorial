@@ -49,41 +49,46 @@ const scrapeGame = async (matchId: string) => {
   // We have to create fake tickets for GA seats
   const ticketsLeft114: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats['114_supporters']['15'],
+    data.result.primary['Unrestricted-imp'].GASeats['114_supporters']?.['15'],
     (index) => ticketsLeft114.push(`114_Supporters_${index}`)
   );
   const ticketsLeft127: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats['127_supporters']['13'],
+    data.result.primary['Unrestricted-imp'].GASeats['127_supporters']?.['13'],
     (index) => ticketsLeft127.push(`127_Supporters_${index}`)
   );
   const ticketsLeft131: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats['131_supporters']['14'],
+    data.result.primary['Unrestricted-imp'].GASeats['131_supporters']?.['14'],
     (index) => ticketsLeft131.push(`131_Supporters_${index}`)
+  );
+  const ticketsLeftClubTour: string[] = [];
+  times(
+    data.result.primary['Unrestricted-imp'].GASeats.Club_Tour?.['7'],
+    (index) => ticketsLeft131.push(`ClubTour_${index}`)
   );
   const ticketsLeft132: string[] = [];
   times(data.result.primary['SSOps-imp']?.seats?.['16'].length, (index) =>
     ticketsLeft132.push(`132_Supporters_${index}`)
   );
 
-  const allSeats = [
+  const tickets = [
     ...ticketsLeft114,
     ...ticketsLeft127,
     ...ticketsLeft131,
     ...ticketsLeft132,
+    ...ticketsLeftClubTour,
     ...seats,
   ];
-  const ticketsLeft = Number(await client.get(`ticketsLeft:${matchId}`));
-  console.log(ticketsLeft, allSeats.length);
+  const ticketsFromPreviousScrape = JSON.parse(
+    (await client.get(`allSeats:${matchId}`)) || '[]'
+  );
+  console.log(ticketsFromPreviousScrape.length, tickets.length);
 
-  if (ticketsLeft !== allSeats.length) {
-    // Tickets were sold
-    const ticketsFromPreviousScrape = JSON.parse(
-      (await client.get(`allSeats:${matchId}`)) || '[]'
-    );
-    const ticketsSold = difference(ticketsFromPreviousScrape, allSeats);
-    const ticketsReleased = difference(allSeats, ticketsFromPreviousScrape);
+  if (ticketsFromPreviousScrape.length !== tickets.length) {
+    // Tickets were sold or added
+    const ticketsSold = difference(ticketsFromPreviousScrape, tickets);
+    const ticketsReleased = difference(tickets, ticketsFromPreviousScrape);
     console.log(`Tickets sold ${matchId}:`, ticketsSold);
     console.log(`Tickets released ${matchId}:`, ticketsReleased);
 
@@ -131,21 +136,20 @@ const scrapeGame = async (matchId: string) => {
     console.log('Tickets released count:', count2.length);
     await prisma.matchStats.create({
       data: {
-        ticketsLeft: allSeats.length,
+        ticketsLeft: tickets.length,
         ticketsLeftIn132: ticketsLeft132.length,
         matchId,
       },
     });
   }
-  await client.set(`ticketsLeft:${matchId}`, allSeats.length);
-  await client.set(`allSeats:${matchId}`, JSON.stringify(allSeats));
+  await client.set(`allSeats:${matchId}`, JSON.stringify(tickets));
 };
 
 if (!global.__scrapingInitiated__) {
   global.__scrapingInitiated__ = true;
   setInterval(async () => {
     await scrapeGame('CFM2217IND');
-  }, 30_000);
+  }, 60_000);
 }
 
 export const number = 8;
