@@ -28,10 +28,10 @@ const scrapeGame = async (matchId: string) => {
   const response = await retry(
     () =>
       fetch(
-        `https://billets.cfmontreal.com/info//showshop.eventInventory3?params=8b3ffd71-436c-49c5-9d1a-1ef8b167f959_${matchId}_[object%20Object]`,
+        `https://billets.cfmontreal.com/info//showshop.eventInventory3?params=c4d6a3d9-96fd-40b4-a549-819993354366_${matchId}_[object%20Object]`,
         {
           headers,
-          body: `{"jsonrpc":"2.0","method":"showshop.eventInventory3","params":["8b3ffd71-436c-49c5-9d1a-1ef8b167f959","${matchId}",{"groupByPriceLevel":true,"groupByRestriction":true,"includeKilledSeats":true}],"id":1}`,
+          body: `{"jsonrpc":"2.0","method":"showshop.eventInventory3","params":["c4d6a3d9-96fd-40b4-a549-819993354366","${matchId}",{"groupByPriceLevel":true,"groupByRestriction":true,"includeKilledSeats":true}],"id":1}`,
           method: 'POST',
         }
       ),
@@ -64,12 +64,20 @@ const scrapeGame = async (matchId: string) => {
   );
   const ticketsLeftClubTour: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats?.Club_Tour?.['7'],
-    (index) => ticketsLeft131.push(`ClubTour_${index}`)
+    data.result.primary['Unrestricted-imp'].GASeats?.['Club de la Tour']?.['7'],
+    (index) => ticketsLeftClubTour.push(`ClubTour_${index}`)
   );
   const ticketsLeft132: string[] = [];
-  times(data.result.primary['SSOps-imp']?.seats?.['16'].length, (index) =>
-    ticketsLeft132.push(`132_Supporters_${index}`)
+  times(
+    data.result.primary['Unrestricted-imp'].GASeats?.['132_Supporters_']?.[
+      '16'
+    ],
+    (index) => ticketsLeft132.push(`132_Supporters_${index}`)
+  );
+  const ticketsLeftLeSudOuest: string[] = [];
+  times(
+    data.result.primary['Unrestricted-imp'].GASeats?.['Le Sud-Ouest']?.['23'],
+    (index) => ticketsLeftLeSudOuest.push(`LeSudOuest_${index}`)
   );
 
   const tickets = [
@@ -78,6 +86,7 @@ const scrapeGame = async (matchId: string) => {
     ...ticketsLeft131,
     ...ticketsLeft132,
     ...ticketsLeftClubTour,
+    ...ticketsLeftLeSudOuest,
     ...seats,
   ];
   const ticketsFromPreviousScrape = JSON.parse(
@@ -149,7 +158,7 @@ if (!global.__scrapingInitiated__) {
   global.__scrapingInitiated__ = true;
   setInterval(async () => {
     try {
-      await scrapeGame('CFM2217IND');
+      await scrapeGame('CFM2220IND');
     } catch (error) {
       console.log('Error occurred during scrape:', error);
     }
