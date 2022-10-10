@@ -42,10 +42,11 @@ const scrapeGame = async (matchId: string) => {
     // Game is possibly sold out or over. Do nothing to prevent a crash.
     return;
   }
-  const seats: string[] = Object.values(
+  const seats: string[] = [
     // eslint-disable-next-line sonarjs/no-duplicate-string
-    data.result.primary['Unrestricted-imp'].seats
-  ).flat() as string[];
+    ...Object.values(data.result.primary['Unrestricted-imp'].seats).flat(),
+    ...Object.values(data.result.primary['Temporary-IMP'].seats).flat(),
+  ];
   // We have to create fake tickets for GA seats
   const ticketsLeft114: string[] = [];
   times(
