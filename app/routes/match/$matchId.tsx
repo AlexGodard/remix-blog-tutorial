@@ -243,8 +243,6 @@ export default function Match({ matchId }: { matchId: string }) {
   ) as number;
   const maxLine = 20_000;
 
-  console.log(chartData);
-
   return (
     <div className="w-full lg:w-auto lg:min-w-[1024px]">
       <div className="max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -267,6 +265,9 @@ export default function Match({ matchId }: { matchId: string }) {
               <option value="CFM2216IND">13 Sept. 2022 c. Chicago Fire</option>
             </select>
           </h3>
+          <div className="text-orange-600">
+            EXPERIMENTAL: Numbers are probably wrong.
+          </div>
           <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {stats.map((item) => (
               <div

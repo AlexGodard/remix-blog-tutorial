@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-spread,unicorn/no-new-array */
 import { difference, times } from 'lodash';
 import { client } from '~/redis.server';
 import { prisma } from '~/db.server';
@@ -47,51 +48,23 @@ const scrapeGame = async (matchId: string) => {
     ...Object.values(data.result.primary['Unrestricted-imp'].seats).flat(),
     ...Object.values(data.result.primary['Temporary-IMP'].seats).flat(),
   ] as string[];
-  // We have to create fake tickets for GA seats
-  const ticketsLeft114: string[] = [];
-  times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['114 Supporters']?.['15'],
-    (index) => ticketsLeft114.push(`114_Supporters_${index}`)
-  );
-  const ticketsLeft127: string[] = [];
-  times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['127 Supporters']?.['13'],
-    (index) => ticketsLeft127.push(`127_Supporters_${index}`)
-  );
-  const ticketsLeft131: string[] = [];
-  times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['131 Supporters']?.['14'],
-    (index) => ticketsLeft131.push(`131_Supporters_${index}`)
-  );
-  const ticketsLeftClubTour: string[] = [];
-  times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['Club de la Tour']?.['7'],
-    (index) => ticketsLeftClubTour.push(`ClubTour_${index}`)
-  );
-  const ticketsLeft132: string[] = [];
-  times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['132 Supporters']?.['16'],
-    (index) => ticketsLeft132.push(`132_Supporters_${index}`)
-  );
-  const ticketsLeftLeSudOuest: string[] = [];
-  times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['Le Sud-Ouest']?.['23'],
-    (index) => ticketsLeftLeSudOuest.push(`LeSudOuest_${index}`)
-  );
+  const ticketsLeftGA = Object.entries(
+    data.result.primary['Unrestricted-imp'].GASeats
+    // eslint-disable-next-line unicorn/no-array-reduce
+  ).reduce((carry: string[], [section, value]: any) => {
+    return [
+      ...carry,
+      ...new Array(Object.values(value)[0] as number)
+        .fill(0)
+        .map((_, index) => `${section.replaceAll(' ', '_')}_${index}`),
+    ];
+  }, []);
 
-  const tickets = [
-    ...ticketsLeft114,
-    ...ticketsLeft127,
-    ...ticketsLeft131,
-    ...ticketsLeft132,
-    ...ticketsLeftClubTour,
-    ...ticketsLeftLeSudOuest,
-    ...seats,
-  ];
+  const tickets = [...ticketsLeftGA, ...seats];
   const ticketsFromPreviousScrape = JSON.parse(
     (await client.get(`allSeats:${matchId}`)) || '[]'
   );
-  console.log(ticketsFromPreviousScrape.length, tickets.length, ticketsLeft132);
+  console.log(ticketsFromPreviousScrape.length, tickets.length);
 
   if (ticketsFromPreviousScrape.length !== tickets.length) {
     // Tickets were sold or added
@@ -121,7 +94,7 @@ const scrapeGame = async (matchId: string) => {
     );
 
     console.log('Tickets sold count:', count.length);
-    const count2 = await Promise.all(
+    /* const count2 = await Promise.all(
       ticketsReleased.map((ticket) =>
         prisma.ticketSale.upsert({
           where: { seat_matchId: { seat: ticket, matchId } },
@@ -139,13 +112,15 @@ const scrapeGame = async (matchId: string) => {
           },
         })
       )
-    );
+    ); */
 
-    console.log('Tickets released count:', count2.length);
+    // console.log('Tickets released count:', count2.length);
     await prisma.matchStats.create({
       data: {
         ticketsLeft: tickets.length,
-        ticketsLeftIn132: ticketsLeft132.length,
+        ticketsLeftIn132: ticketsLeftGA.filter((ticket) =>
+          ticket.includes('132_Supporters')
+        ).length,
         matchId,
       },
     });
@@ -162,7 +137,7 @@ if (!global.__scrapingInitiated__) {
     } catch (error) {
       console.log('Error occurred during scrape:', error);
     }
-  }, 10_000);
+  }, 5000);
 }
 
 export const number = 8;
