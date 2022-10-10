@@ -69,7 +69,7 @@ const scrapeGame = async (matchId: string) => {
   );
   const ticketsLeft132: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['132_Supporters']?.['16'],
+    data.result.primary['Unrestricted-imp'].GASeats?.['132_supporters']?.['16'],
     (index) => ticketsLeft132.push(`132_Supporters_${index}`)
   );
   const ticketsLeftLeSudOuest: string[] = [];
