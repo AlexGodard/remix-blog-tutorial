@@ -257,11 +257,11 @@ export default function Match({ matchId }: { matchId: string }) {
                 navigate(`/match/${event.target.value}`);
               }}
             >
-              <option value="CFM2217IND">1er Oct. 2022 c. D.C. United</option>
-              <option value="CFM2216IND">13 Sept. 2022 c. Chicago Fire</option>
               <option value="CFM2220IND">
                 10 Oct. 2022 c. Orlando City SC
               </option>
+              <option value="CFM2217IND">1er Oct. 2022 c. D.C. United</option>
+              <option value="CFM2216IND">13 Sept. 2022 c. Chicago Fire</option>
             </select>
           </h3>
           <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
