@@ -46,7 +46,7 @@ const scrapeGame = async (matchId: string) => {
     // eslint-disable-next-line sonarjs/no-duplicate-string
     ...Object.values(data.result.primary['Unrestricted-imp'].seats).flat(),
     ...Object.values(data.result.primary['Temporary-IMP'].seats).flat(),
-  ];
+  ] as string[];
   // We have to create fake tickets for GA seats
   const ticketsLeft114: string[] = [];
   times(
