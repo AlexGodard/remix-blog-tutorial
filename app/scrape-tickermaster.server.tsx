@@ -69,9 +69,7 @@ const scrapeGame = async (matchId: string) => {
   );
   const ticketsLeft132: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['132_Supporters_']?.[
-      '16'
-    ],
+    data.result.primary['Unrestricted-imp'].GASeats?.['132_Supporters']?.['16'],
     (index) => ticketsLeft132.push(`132_Supporters_${index}`)
   );
   const ticketsLeftLeSudOuest: string[] = [];
@@ -92,7 +90,7 @@ const scrapeGame = async (matchId: string) => {
   const ticketsFromPreviousScrape = JSON.parse(
     (await client.get(`allSeats:${matchId}`)) || '[]'
   );
-  console.log(ticketsFromPreviousScrape.length, tickets.length);
+  console.log(ticketsFromPreviousScrape.length, tickets.length, ticketsLeft132);
 
   if (ticketsFromPreviousScrape.length !== tickets.length) {
     // Tickets were sold or added
@@ -156,13 +154,14 @@ const scrapeGame = async (matchId: string) => {
 
 if (!global.__scrapingInitiated__) {
   global.__scrapingInitiated__ = true;
+  console.log("Let's goo....");
   setInterval(async () => {
     try {
       await scrapeGame('CFM2220IND');
     } catch (error) {
       console.log('Error occurred during scrape:', error);
     }
-  }, 60_000);
+  }, 10_000);
 }
 
 export const number = 8;
