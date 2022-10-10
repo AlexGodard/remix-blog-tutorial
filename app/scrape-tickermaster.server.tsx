@@ -49,17 +49,17 @@ const scrapeGame = async (matchId: string) => {
   // We have to create fake tickets for GA seats
   const ticketsLeft114: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['114_supporters']?.['15'],
+    data.result.primary['Unrestricted-imp'].GASeats?.['114 Supporters']?.['15'],
     (index) => ticketsLeft114.push(`114_Supporters_${index}`)
   );
   const ticketsLeft127: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['127_supporters']?.['13'],
+    data.result.primary['Unrestricted-imp'].GASeats?.['127 Supporters']?.['13'],
     (index) => ticketsLeft127.push(`127_Supporters_${index}`)
   );
   const ticketsLeft131: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['131_supporters']?.['14'],
+    data.result.primary['Unrestricted-imp'].GASeats?.['131 Supporters']?.['14'],
     (index) => ticketsLeft131.push(`131_Supporters_${index}`)
   );
   const ticketsLeftClubTour: string[] = [];
@@ -69,7 +69,7 @@ const scrapeGame = async (matchId: string) => {
   );
   const ticketsLeft132: string[] = [];
   times(
-    data.result.primary['Unrestricted-imp'].GASeats?.['132_supporters']?.['16'],
+    data.result.primary['Unrestricted-imp'].GASeats?.['132 Supporters']?.['16'],
     (index) => ticketsLeft132.push(`132_Supporters_${index}`)
   );
   const ticketsLeftLeSudOuest: string[] = [];
