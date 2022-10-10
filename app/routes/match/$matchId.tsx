@@ -65,13 +65,14 @@ export const loader: LoaderFunction = async ({ params }) => {
   invariant(matchStats, `Match not found.`);
   invariant(latestMatchStats, `Match not found.`);
   return json<LoaderData>({
-    ticketSales: ticketSales.filter(
+    /* ticketSales: ticketSales.filter(
       (ticketSale) =>
         !(
           ticketSale.released &&
           !isSameSecond(ticketSale.createdAt, ticketSale.updatedAt)
         )
-    ),
+    ), */
+    ticketSales: ticketSales.filter((ticketSale) => !ticketSale.released),
     matchStats,
     latestMatchStats,
   });
@@ -242,6 +243,8 @@ export default function Match({ matchId }: { matchId: string }) {
   ) as number;
   const maxLine = 20_000;
 
+  console.log(chartData);
+
   return (
     <div className="w-full lg:w-auto lg:min-w-[1024px]">
       <div className="max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -334,13 +337,7 @@ export default function Match({ matchId }: { matchId: string }) {
                   return `${format(
                     datum.date,
                     isHour ? 'dd MMM. kk:mm' : 'dd MMM. yyyy'
-                  )}\n ${datum.ticketsLeft.toLocaleString()} billets vendus (+${
-                    datum.ticketsSold
-                  }${
-                    datum.ticketsReleased
-                      ? ` - ${datum.ticketsReleased} libérés`
-                      : ''
-                  })`;
+                  )}\n ${datum.ticketsSold.toLocaleString()} billets vendus (${datum.ticketsLeft.toLocaleString()} total)`;
                 }}
               />
             }
@@ -384,7 +381,7 @@ export default function Match({ matchId }: { matchId: string }) {
                 tickLabels: { ...style.tickLabels, fill: 'blue' },
               }}
             />
-            <VictoryAxis
+            {/* <VictoryAxis
               // Use normalized tickValues (0 - 1)
               tickValues={[0.25, 0.5, 0.75, 1]}
               // Re-scale ticks by multiplying by correct maxima
@@ -407,8 +404,8 @@ export default function Match({ matchId }: { matchId: string }) {
                   fill: 'darkgreen',
                 },
               }}
-            />
-            <VictoryLine
+            /> */}
+            {/* <VictoryLine
               data={chartData}
               x="date"
               y={(datum) => datum.ticketsLeft / maxLine}
@@ -418,9 +415,9 @@ export default function Match({ matchId }: { matchId: string }) {
                   strokeWidth: ({ active }) => (active ? 3 : 2),
                 },
               }}
-            />
+            /> */}
             <VictoryStack>
-              <VictoryBar
+              {/* <VictoryBar
                 barRatio={0.2}
                 data={chartData}
                 x="date"
@@ -430,7 +427,7 @@ export default function Match({ matchId }: { matchId: string }) {
                     fill: 'red',
                   },
                 }}
-              />
+              /> */}
               <VictoryBar
                 barRatio={0.2}
                 data={chartData}
