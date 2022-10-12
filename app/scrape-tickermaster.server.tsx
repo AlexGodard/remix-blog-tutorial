@@ -45,8 +45,10 @@ const scrapeGame = async (matchId: string) => {
   }
   const seats: string[] = [
     // eslint-disable-next-line sonarjs/no-duplicate-string
-    ...Object.values(data.result.primary['Unrestricted-imp'].seats).flat(),
-    ...Object.values(data.result.primary['Temporary-IMP'].seats).flat(),
+    ...Object.values(
+      data.result.primary['Unrestricted-imp']?.seats || {}
+    ).flat(),
+    ...Object.values(data.result.primary['Temporary-IMP']?.seats || {}).flat(),
   ] as string[];
   const ticketsLeftGA = Object.entries(
     data.result.primary['Unrestricted-imp'].GASeats
@@ -137,7 +139,7 @@ if (!global.__scrapingInitiated__) {
     } catch (error) {
       console.log('Error occurred during scrape:', error);
     }
-  }, 1000 * 60 * 2);
+  }, 1000);
 }
 
 export const number = 8;
