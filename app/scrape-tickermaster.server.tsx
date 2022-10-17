@@ -29,10 +29,10 @@ const scrapeGame = async (matchId: string) => {
   const response = await retry(
     () =>
       fetch(
-        `https://billets.cfmontreal.com/info//showshop.eventInventory3?params=c4d6a3d9-96fd-40b4-a549-819993354366_${matchId}_[object%20Object]`,
+        `https://billets.cfmontreal.com/info//showshop.eventInventory3?params=fb654025-eadc-4332-8ce0-8056882c81ce_${matchId}_[object%20Object]`,
         {
           headers,
-          body: `{"jsonrpc":"2.0","method":"showshop.eventInventory3","params":["c4d6a3d9-96fd-40b4-a549-819993354366","${matchId}",{"groupByPriceLevel":true,"groupByRestriction":true,"includeKilledSeats":true}],"id":1}`,
+          body: `{"jsonrpc":"2.0","method":"showshop.eventInventory3","params":["fb654025-eadc-4332-8ce0-8056882c81ce","${matchId}",{"groupByPriceLevel":true,"groupByRestriction":true,"includeKilledSeats":true}],"id":1}`,
           method: 'POST',
         }
       ),
@@ -135,7 +135,7 @@ if (!global.__scrapingInitiated__) {
   console.log("Let's goo....");
   setInterval(async () => {
     try {
-      await scrapeGame('CFM2220IND');
+      await scrapeGame('CFM2221IND');
     } catch (error) {
       console.log('Error occurred during scrape:', error);
     }
