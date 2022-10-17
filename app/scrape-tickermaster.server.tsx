@@ -139,7 +139,7 @@ if (!global.__scrapingInitiated__) {
     } catch (error) {
       console.log('Error occurred during scrape:', error);
     }
-  }, 1000);
+  }, 1000 * 60 * 2);
 }
 
 export const number = 8;
